@@ -25,7 +25,7 @@ const days = [
 export function SettingsForm({ user }: { user: User }) {
   const [isPending, startTransition] = useTransition();
   const [result, setResult] = useState<ActionResult | null>(null);
-  const form = useForm({ resolver: zodResolver(settingsSchema), defaultValues: { name: user.name, email: user.email ?? "", preferredWeekStartDay: user.preferredWeekStartDay } });
+  const form = useForm({ resolver: zodResolver(settingsSchema), defaultValues: { name: user.name, email: user.email ?? "", preferredWeekStartDay: user.preferredWeekStartDay, currency: user.currency } });
   function onSubmit(values: unknown) {
     startTransition(async () => setResult(await updateSettings(values)));
   }
@@ -44,6 +44,9 @@ export function SettingsForm({ user }: { user: User }) {
               <SelectTrigger><SelectValue /></SelectTrigger>
               <SelectContent>{days.map(([value, label]) => <SelectItem key={value} value={value}>{label}</SelectItem>)}</SelectContent>
             </Select>
+          </Field>
+          <Field label="Currency unit" error={form.formState.errors.currency?.message as string | undefined}>
+            <Input placeholder="currency" {...form.register("currency")} />
           </Field>
           <div className="rounded-md bg-muted p-3 text-sm text-muted-foreground">To reset demo data safely, run <code>npm run db:reset</code> locally. There is no in-app destructive reset button in MVP1.</div>
           <div className="flex items-center gap-3"><Button disabled={isPending}>{isPending ? "Saving..." : "Save settings"}</Button><ActionMessage result={result} /></div>

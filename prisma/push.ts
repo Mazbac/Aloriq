@@ -20,6 +20,16 @@ function splitSql(script: string) {
 async function main() {
   const existing = await prisma.$queryRawUnsafe<Array<{ name: string }>>("SELECT name FROM sqlite_master WHERE type='table' AND name='User'");
   if (existing.length) {
+    const columns = await prisma.$queryRawUnsafe<Array<{ name: string }>>("PRAGMA table_info('User')");
+    const names = new Set(columns.map((column) => column.name));
+    if (!names.has("currency")) {
+      await prisma.$executeRawUnsafe("ALTER TABLE User ADD COLUMN currency TEXT NOT NULL DEFAULT 'currency'");
+      console.log("Added User.currency.");
+    }
+    if (!names.has("setupCompletedAt")) {
+      await prisma.$executeRawUnsafe("ALTER TABLE User ADD COLUMN setupCompletedAt DATETIME");
+      console.log("Added User.setupCompletedAt.");
+    }
     console.log("SQLite schema already exists. Skipping DDL.");
     return;
   }

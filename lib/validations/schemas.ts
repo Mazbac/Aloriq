@@ -35,7 +35,7 @@ export const goalSchema = z.object({
   startDate: optionalDateSchema,
   targetDate: optionalDateSchema,
   whyNow: text,
-  successDefinition: z.string().trim().min(1, "Success definition is required."),
+  successDefinition: z.string().trim().optional().transform((value) => value ?? ""),
   tradeOffs: text,
   notWorthItIf: text,
   externalWorkUrl: optionalUrlSchema,
@@ -107,6 +107,7 @@ export const settingsSchema = z.object({
   name: z.string().trim().min(1, "Name is required."),
   email: z.string().trim().email("Use a valid email.").optional().or(z.literal("")),
   preferredWeekStartDay: z.coerce.number().int().min(0).max(6),
+  currency: z.string().trim().min(1, "Currency label is required."),
 });
 
 export const breakdownAssumptionSchema = z.object({

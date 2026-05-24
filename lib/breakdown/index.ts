@@ -3,8 +3,14 @@ import { breakdownTemplates } from "./templates";
 import type { AssumptionInput, BreakdownOutputItem, BreakdownResult } from "./types";
 
 function num(input: string | undefined) {
-  const parsed = Number(input);
+  const parsed = Number(input?.replace("%", ""));
   return Number.isFinite(parsed) ? parsed : null;
+}
+
+function rate(input: string | undefined) {
+  const parsed = num(input);
+  if (parsed == null) return null;
+  return parsed > 1 ? parsed / 100 : parsed;
 }
 
 function fmt(value: number, digits = 1) {
@@ -53,14 +59,14 @@ export function runBreakdown(type: GoalType, assumptions: AssumptionInput): Brea
     const newCustomersPerMonth = customerGap / months;
     const newCustomersPerWeek = newCustomersPerMonth / 4.33;
     outputs = [
-      { label: "Target MRR", value: fmt(targetMrr, 0), unit: "USD" },
+      { label: "Target MRR", value: fmt(targetMrr, 0), unit: "currency" },
       { label: "Required active customers", value: fmt(targetMrr / arpa, 1), unit: "customers" },
       { label: "Customer gap", value: fmt(customerGap, 1), unit: "customers" },
       { label: "Net new customers", value: fmt(newCustomersPerMonth, 1), unit: "customers", period: "month" },
       { label: "Net new customers", value: fmt(newCustomersPerWeek, 1), unit: "customers", period: "week" },
     ];
-    const trialConversion = num(assumptions.trialConversion);
-    const leadConversion = num(assumptions.leadConversion);
+    const trialConversion = rate(assumptions.trialConversion);
+    const leadConversion = rate(assumptions.leadConversion);
     if (trialConversion && trialConversion > 0) {
       const trialsPerWeek = newCustomersPerMonth / trialConversion / 4.33;
       outputs.push({ label: "Required trials or demos", value: fmt(trialsPerWeek, 1), unit: "trials", period: "week" });
@@ -84,14 +90,14 @@ export function runBreakdown(type: GoalType, assumptions: AssumptionInput): Brea
     const income = num(assumptions.monthlyIncome);
     const expenses = num(assumptions.monthlyExpenses);
     outputs = [
-      { label: "Savings gap", value: fmt(gap, 0), unit: "USD" },
-      { label: "Required savings", value: fmt(requiredMonthly, 0), unit: "USD", period: "month" },
-      { label: "Required savings", value: fmt(requiredMonthly / 4.33, 0), unit: "USD", period: "week" },
+      { label: "Savings gap", value: fmt(gap, 0), unit: "currency" },
+      { label: "Required savings", value: fmt(requiredMonthly, 0), unit: "currency", period: "month" },
+      { label: "Required savings", value: fmt(requiredMonthly / 4.33, 0), unit: "currency", period: "week" },
     ];
     if (income != null && expenses != null) {
       const capacity = income - expenses;
-      outputs.push({ label: "Estimated current capacity", value: fmt(capacity, 0), unit: "USD", period: "month" });
-      if (requiredMonthly > capacity) outputs.push({ label: "Capacity warning", value: fmt(requiredMonthly - capacity, 0), unit: "USD", explanation: "Required monthly savings exceeds estimated capacity." });
+      outputs.push({ label: "Estimated current capacity", value: fmt(capacity, 0), unit: "currency", period: "month" });
+      if (requiredMonthly > capacity) outputs.push({ label: "Capacity warning", value: fmt(requiredMonthly - capacity, 0), unit: "currency", explanation: "Required monthly savings exceeds estimated capacity." });
     }
     suggestedCommitment = `Transfer ${Math.ceil(requiredMonthly / 4.33)} to savings`;
   }

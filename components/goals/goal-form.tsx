@@ -32,7 +32,7 @@ const goalFormSchema = z.object({
   startDate: z.string(),
   targetDate: z.string(),
   whyNow: z.string(),
-  successDefinition: z.string().trim().min(1, "Success definition is required."),
+  successDefinition: z.string(),
   tradeOffs: z.string(),
   notWorthItIf: z.string(),
   externalWorkUrl: z.string().url("Use a valid URL.").optional().or(z.literal("")),
@@ -130,7 +130,7 @@ export function GoalForm({ goal, domains, needs, values }: { goal?: GoalWithRela
           <Field label="Why now?" className="md:col-span-2" error={form.formState.errors.whyNow?.message as string | undefined}>
             <Textarea {...form.register("whyNow")} />
           </Field>
-          <Field label="Success definition" className="md:col-span-2" error={form.formState.errors.successDefinition?.message}>
+          <Field label="Success definition" className="md:col-span-2" error={form.formState.errors.successDefinition?.message} hint="Required before a goal can become Active. Drafts can stay incomplete.">
             <Textarea {...form.register("successDefinition")} />
           </Field>
           <Field label="Trade-offs" className="md:col-span-2" error={form.formState.errors.tradeOffs?.message as string | undefined}>

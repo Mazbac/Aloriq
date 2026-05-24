@@ -2,6 +2,8 @@ import { notFound } from "next/navigation";
 import { getDemoUser, prisma } from "@/lib/prisma";
 import { GoalForm } from "@/components/goals/goal-form";
 
+export const dynamic = "force-dynamic";
+
 export default async function EditGoalPage({ params }: { params: Promise<{ id: string }> }) {
   const user = await getDemoUser();
   const { id } = await params;

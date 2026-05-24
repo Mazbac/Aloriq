@@ -1,6 +1,6 @@
-# Alignment
+# Aloriq
 
-Alignment is an MVP goal alignment and tracking app. It helps a demo user define life domains, values, criteria, structured goals, metrics, weekly commitments, breakdowns, and reviews without becoming a task manager or specialist tracker.
+Aloriq is an MVP goal alignment and tracking app. It helps a demo user define life domains, values, criteria, structured goals, metrics, weekly commitments, breakdowns, and reviews without becoming a task manager or specialist tracker.
 
 ## Local Setup
 

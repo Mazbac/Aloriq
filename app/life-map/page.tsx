@@ -6,6 +6,8 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Badge } from "@/components/ui/badge";
 import { LifeDomainForm } from "@/components/life-map/life-domain-form";
 
+export const dynamic = "force-dynamic";
+
 export default async function LifeMapPage({ searchParams }: { searchParams: Promise<{ sort?: string }> }) {
   const user = await getDemoUser();
   const params = await searchParams;

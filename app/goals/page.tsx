@@ -2,13 +2,17 @@ import Link from "next/link";
 import { GoalStatus, GoalType } from "@prisma/client";
 import { Plus } from "lucide-react";
 import { getDemoUser, prisma } from "@/lib/prisma";
+import { currentWeekRange } from "@/lib/goals/activation";
 import { enumLabel } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { GoalCard } from "@/components/goals/goal-card";
 
+export const dynamic = "force-dynamic";
+
 export default async function GoalsPage({ searchParams }: { searchParams: Promise<{ status?: string; domain?: string; type?: string }> }) {
   const user = await getDemoUser();
+  const week = currentWeekRange(new Date(), user.preferredWeekStartDay);
   const params = await searchParams;
   const domains = await prisma.lifeDomain.findMany({ where: { userId: user.id }, orderBy: { name: "asc" } });
   const goals = await prisma.goal.findMany({
@@ -23,7 +27,7 @@ export default async function GoalsPage({ searchParams }: { searchParams: Promis
       lifeDomain: true,
       values: { include: { value: true } },
       metrics: true,
-      weeklyCommitments: { orderBy: { weekStartDate: "desc" }, take: 1 },
+      weeklyCommitments: { where: { weekStartDate: { gte: week.start, lt: week.end } }, orderBy: { weekStartDate: "desc" }, take: 1 },
     },
   });
 

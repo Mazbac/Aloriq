@@ -9,8 +9,9 @@ async function main() {
   const user = await prisma.user.create({
     data: {
       name: "Demo User",
-      email: "demo@alignment.local",
+      email: "demo@aloriq.local",
       preferredWeekStartDay: 1,
+      setupCompletedAt: new Date(),
     },
   });
 
@@ -80,7 +81,7 @@ async function main() {
   const revenueGoal = await prisma.goal.create({
     data: {
       userId: user.id,
-      title: "Reach $300k ARR without adding chaos",
+      title: "Reach 300k ARR without adding chaos",
       description: "Grow the business while keeping delivery quality and recovery protected.",
       lifeDomainId: workDomain.id,
       goalType: GoalType.BUSINESS_REVENUE,
@@ -88,7 +89,7 @@ async function main() {
       startDate: new Date("2026-05-01"),
       targetDate: new Date("2026-12-31"),
       whyNow: "The current offer is validated and the pipeline needs a clearer operating target.",
-      successDefinition: "$300k ARR with stable fulfillment and no sustained damage to health or relationships.",
+      successDefinition: "300k ARR with stable fulfillment and no sustained damage to health or relationships.",
       tradeOffs: "Fewer side projects and tighter qualification standards.",
       notWorthItIf: "Sleep, trust, or delivery quality degrade for more than two review cycles.",
       externalWorkUrl: "https://github.com/",
@@ -102,7 +103,7 @@ async function main() {
       },
       metrics: {
         create: [
-          { name: "ARR", type: MetricType.OUTCOME, unit: "USD", targetValue: 300000, currentValue: 150000, direction: MetricDirection.INCREASE, frequency: MetricFrequency.MONTHLY },
+          { name: "ARR", type: MetricType.OUTCOME, unit: "currency", targetValue: 300000, currentValue: 150000, direction: MetricDirection.INCREASE, frequency: MetricFrequency.MONTHLY },
           { name: "Qualified leads", type: MetricType.LEAD, unit: "leads", targetValue: 25, currentValue: 12, direction: MetricDirection.INCREASE, frequency: MetricFrequency.WEEKLY },
           { name: "Burnout risk", type: MetricType.RISK, unit: "score", targetValue: 4, currentValue: 5, direction: MetricDirection.DECREASE, frequency: MetricFrequency.WEEKLY },
           { name: "Still worth pursuing", type: MetricType.ALIGNMENT, unit: "score", targetValue: 8, currentValue: 8, direction: MetricDirection.SCORE, frequency: MetricFrequency.WEEKLY },
@@ -115,9 +116,9 @@ async function main() {
       },
       breakdownAssumptions: {
         create: [
-          { key: "targetArr", label: "Target ARR", value: "300000", unit: "USD" },
-          { key: "currentArr", label: "Current ARR", value: "150000", unit: "USD" },
-          { key: "arpa", label: "Average revenue per customer per month", value: "2500", unit: "USD" },
+          { key: "targetArr", label: "Target ARR", value: "300000", unit: "currency" },
+          { key: "currentArr", label: "Current ARR", value: "150000", unit: "currency" },
+          { key: "arpa", label: "Average revenue per customer per month", value: "2500", unit: "currency" },
           { key: "trialConversion", label: "Trial-to-customer conversion rate", value: "0.25" },
           { key: "leadConversion", label: "Lead-to-trial conversion rate", value: "0.2" },
           { key: "workingDaysPerWeek", label: "Working days per week", value: "5", unit: "days" },
@@ -204,7 +205,7 @@ async function main() {
     ],
   });
 
-  console.log(`Seeded Alignment demo data for ${user.name}; previous review ${review.id}`);
+  console.log(`Seeded Aloriq demo data for ${user.name}; previous review ${review.id}`);
 }
 
 main()

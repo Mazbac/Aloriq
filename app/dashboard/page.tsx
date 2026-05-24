@@ -1,25 +1,32 @@
 import Link from "next/link";
+import { redirect } from "next/navigation";
 import { GoalStatus, MetricType } from "@prisma/client";
 import { AlertTriangle, CheckCircle2 } from "lucide-react";
 import { getDemoUser, prisma } from "@/lib/prisma";
-import { enumLabel, formatDate, startOfWeek } from "@/lib/utils";
+import { enumLabel, formatDate } from "@/lib/utils";
+import { currentWeekRange } from "@/lib/goals/activation";
 import { metricCompleteness } from "@/components/goals/goal-card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
 
+export const dynamic = "force-dynamic";
+
 export default async function DashboardPage() {
   const user = await getDemoUser();
-  const [goals, domains, reviews, commitments] = await Promise.all([
+  if (!user.setupCompletedAt) redirect("/setup");
+  const week = currentWeekRange(new Date(), user.preferredWeekStartDay);
+  const [goals, domains, reviews, commitments, staleCommitments] = await Promise.all([
     prisma.goal.findMany({
       where: { userId: user.id },
-      include: { lifeDomain: true, values: true, metrics: true, weeklyCommitments: { orderBy: { weekStartDate: "desc" }, take: 1 } },
+      include: { lifeDomain: true, values: true, metrics: true, weeklyCommitments: { where: { weekStartDate: { gte: week.start, lt: week.end } }, orderBy: { weekStartDate: "desc" }, take: 1 } },
       orderBy: { updatedAt: "desc" },
     }),
     prisma.lifeDomain.findMany({ where: { userId: user.id }, orderBy: [{ riskScore: "desc" }, { importanceScore: "desc" }], take: 4 }),
     prisma.review.findMany({ where: { userId: user.id }, orderBy: { periodStart: "desc" }, take: 1 }),
-    prisma.weeklyCommitment.findMany({ where: { goal: { userId: user.id, status: "ACTIVE" } }, include: { goal: true }, orderBy: { weekStartDate: "desc" }, take: 6 }),
+    prisma.weeklyCommitment.findMany({ where: { goal: { userId: user.id, status: "ACTIVE" }, weekStartDate: { gte: week.start, lt: week.end } }, include: { goal: true }, orderBy: { weekStartDate: "desc" }, take: 6 }),
+    prisma.weeklyCommitment.findMany({ where: { goal: { userId: user.id, status: "ACTIVE" }, weekStartDate: { lt: week.start }, status: { in: ["PLANNED", "PARTIAL"] } }, include: { goal: true }, orderBy: { weekStartDate: "desc" }, take: 4 }),
   ]);
 
   const activeGoals = goals.filter((goal) => goal.status === "ACTIVE");
@@ -27,15 +34,14 @@ export default async function DashboardPage() {
   const missingValues = activeGoals.filter((goal) => goal.values.length === 0);
   const missingMetrics = activeGoals.filter((goal) => Object.values(MetricType).some((type) => !goal.metrics.some((metric) => metric.type === type)));
   const missingCommitments = activeGoals.filter((goal) => goal.weeklyCommitments.length === 0);
-  const weekStart = startOfWeek(new Date(), user.preferredWeekStartDay);
   const latestReview = reviews[0];
-  const reviewDue = !latestReview || latestReview.periodStart < weekStart;
+  const reviewDue = !latestReview || latestReview.periodStart < week.start;
 
   return (
     <div className="space-y-6">
       {goals.length === 0 ? (
         <Card>
-          <CardHeader><CardTitle>Start with alignment</CardTitle><CardDescription>Complete Life Map, define values, then create the first structured goal.</CardDescription></CardHeader>
+          <CardHeader><CardTitle>Start with Aloriq</CardTitle><CardDescription>Complete Life Map, define values, then create the first structured goal.</CardDescription></CardHeader>
           <CardContent className="flex flex-wrap gap-2">
             <Button asChild><Link href="/life-map">Open Life Map</Link></Button>
             <Button asChild variant="outline"><Link href="/values">Define Values</Link></Button>
@@ -93,6 +99,11 @@ export default async function DashboardPage() {
                 <p className="text-sm text-muted-foreground">{commitment.goal.title} · {enumLabel(commitment.status)}</p>
               </div>
             )) : <p className="text-sm text-muted-foreground">No current commitments.</p>}
+            {staleCommitments.length ? (
+              <div className="rounded-md bg-muted p-3 text-sm text-muted-foreground">
+                {staleCommitments.length} stale planned or partial commitments exist from earlier weeks.
+              </div>
+            ) : null}
           </CardContent>
         </Card>
         <Card>

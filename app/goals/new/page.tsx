@@ -1,6 +1,8 @@
 import { getDemoUser, prisma } from "@/lib/prisma";
 import { GoalForm } from "@/components/goals/goal-form";
 
+export const dynamic = "force-dynamic";
+
 export default async function NewGoalPage() {
   const user = await getDemoUser();
   const [domains, needs, values] = await Promise.all([

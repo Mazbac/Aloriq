@@ -1,6 +1,8 @@
 import { getDemoUser, prisma } from "@/lib/prisma";
 import { ValuesManager } from "@/components/values/values-manager";
 
+export const dynamic = "force-dynamic";
+
 export default async function ValuesPage() {
   const user = await getDemoUser();
   const values = await prisma.value.findMany({

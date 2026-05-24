@@ -5,7 +5,7 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { CommitmentStatus, GoalType, MetricDirection, MetricFrequency, MetricType, type BreakdownAssumption, type Metric } from "@prisma/client";
 import { Plus } from "lucide-react";
-import { runGoalBreakdown, saveCommitment, saveMetric, saveMetricEntry, updateCommitmentStatus, type ActionResult } from "@/app/actions";
+import { addRecommendedMetricStack, runGoalBreakdown, saveCommitment, saveMetric, saveMetricEntry, updateCommitmentStatus, type ActionResult } from "@/app/actions";
 import { breakdownTemplates } from "@/lib/breakdown/templates";
 import { commitmentSchema, metricEntrySchema, metricSchema } from "@/lib/validations/schemas";
 import { enumLabel, toDateInput } from "@/lib/utils";
@@ -72,6 +72,19 @@ export function MetricEntryForm({ metric, goalId }: { metric: Metric; goalId: st
   );
 }
 
+export function AddRecommendedMetricStackButton({ goalId }: { goalId: string }) {
+  const [isPending, startTransition] = useTransition();
+  const [result, setResult] = useState<ActionResult | null>(null);
+  return (
+    <div className="flex flex-wrap items-center gap-3">
+      <Button type="button" variant="outline" disabled={isPending} onClick={() => startTransition(async () => setResult(await addRecommendedMetricStack(goalId)))}>
+        {isPending ? "Adding..." : "Add recommended metric stack"}
+      </Button>
+      <ActionMessage result={result} />
+    </div>
+  );
+}
+
 export function CommitmentForm({ goalId, suggested }: { goalId: string; suggested?: string }) {
   const [isPending, startTransition] = useTransition();
   const [result, setResult] = useState<ActionResult | null>(null);
@@ -103,11 +116,13 @@ export function CommitmentForm({ goalId, suggested }: { goalId: string; suggeste
   );
 }
 
-export function BreakdownForm({ goalId, goalType, assumptions }: { goalId: string; goalType: GoalType; assumptions: BreakdownAssumption[] }) {
+export function BreakdownForm({ goalId, goalType, assumptions, targetDate }: { goalId: string; goalType: GoalType; assumptions: BreakdownAssumption[]; targetDate?: Date | null }) {
   const template = breakdownTemplates[goalType];
   const [isPending, startTransition] = useTransition();
   const [result, setResult] = useState<ActionResult | null>(null);
   const defaults = Object.fromEntries(assumptions.map((item) => [item.key, item.value]));
+  if (targetDate && !defaults.targetDate) defaults.targetDate = toDateInput(targetDate);
+  if (targetDate && !defaults.deadline) defaults.deadline = toDateInput(targetDate);
   const [values, setValues] = useState<Record<string, string>>(defaults);
   if (!template.assumptions.length) {
     return (
@@ -127,7 +142,11 @@ export function BreakdownForm({ goalId, goalType, assumptions }: { goalId: strin
         <div className="grid gap-4 md:grid-cols-2">
           {template.assumptions.map((item) => (
             <Field key={item.key} label={`${item.label}${item.required ? " *" : ""}`} hint={item.placeholder}>
-              <Input value={values[item.key] ?? ""} onChange={(event) => setValues((current) => ({ ...current, [item.key]: event.target.value }))} />
+              <Input
+                type={inputTypeForAssumption(item.key)}
+                value={values[item.key] ?? ""}
+                onChange={(event) => setValues((current) => ({ ...current, [item.key]: event.target.value }))}
+              />
             </Field>
           ))}
         </div>
@@ -135,6 +154,24 @@ export function BreakdownForm({ goalId, goalType, assumptions }: { goalId: strin
       </CardContent>
     </Card>
   );
+}
+
+function inputTypeForAssumption(key: string) {
+  const lower = key.toLowerCase();
+  if (lower.includes("date") || lower.includes("deadline")) return "date";
+  if (
+    lower.includes("conversion") ||
+    lower.includes("url") ||
+    lower.includes("level") ||
+    lower.includes("skill") ||
+    lower.includes("method") ||
+    lower.includes("behavior") ||
+    lower.includes("ritual") ||
+    lower.includes("friction")
+  ) {
+    return "text";
+  }
+  return "number";
 }
 
 export function CommitmentStatusForm({ id, goalId, status, actualValue, notes }: { id: string; goalId: string; status: CommitmentStatus; actualValue?: unknown; notes?: string | null }) {

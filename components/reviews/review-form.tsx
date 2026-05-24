@@ -90,7 +90,7 @@ export function ReviewForm({ goals, periodStart, periodEnd }: { goals: ReviewGoa
               <div className="flex flex-wrap items-start justify-between gap-3">
                 <div>
                   <CardTitle>{goal.title}</CardTitle>
-                  <CardDescription>{goal.successDefinition}</CardDescription>
+                  <CardDescription>{goal.successDefinition || "No success definition written yet."}</CardDescription>
                 </div>
                 {goal.externalWorkUrl ? <Button asChild variant="outline" size="sm"><a href={goal.externalWorkUrl} target="_blank" rel="noreferrer">Open work tool</a></Button> : null}
               </div>
@@ -98,13 +98,11 @@ export function ReviewForm({ goals, periodStart, periodEnd }: { goals: ReviewGoa
             <CardContent className="space-y-5">
               <div className="grid gap-3 md:grid-cols-2">
                 <Info title="Latest metrics" items={goal.metrics.map((metric) => `${metric.name}: ${decimalToNumber(metric.entries[0]?.value ?? metric.currentValue) ?? "-"} ${metric.unit ?? ""}`)} />
-                <Info title="Weekly commitments" items={goal.weeklyCommitments.map((commitment) => `${commitment.statement} (${enumLabel(commitment.status)})`)} />
-                <Info title="Trade-offs" items={[goal.tradeOffs || "No trade-offs written."]} />
-                <Info title="Not worth it if" items={[goal.notWorthItIf || "No kill condition written."]} />
+                <Info title="This week's commitments" items={goal.weeklyCommitments.map((commitment) => `${commitment.statement} (${enumLabel(commitment.status)})`)} />
               </div>
               <div className="grid gap-4 md:grid-cols-3">
                 <Field label="Alignment score"><Input type="number" min={1} max={10} {...form.register(`goalReviews.${index}.alignmentScore`, { valueAsNumber: true })} /></Field>
-                <Field label="Cost score"><Input type="number" min={1} max={10} {...form.register(`goalReviews.${index}.costScore`, { valueAsNumber: true })} /></Field>
+                <Field label="Cost burden score"><Input type="number" min={1} max={10} {...form.register(`goalReviews.${index}.costScore`, { valueAsNumber: true })} /></Field>
                 <Field label="Confidence score"><Input type="number" min={1} max={10} {...form.register(`goalReviews.${index}.confidenceScore`, { valueAsNumber: true })} /></Field>
               </div>
               <Field label="Progress summary"><Textarea {...form.register(`goalReviews.${index}.progressSummary`)} /></Field>
@@ -123,13 +121,16 @@ export function ReviewForm({ goals, periodStart, periodEnd }: { goals: ReviewGoa
                 ) : null}
               </div>
               <Field label="Decision reason"><Textarea {...form.register(`goalReviews.${index}.decisionReason`)} /></Field>
-              <div className="grid gap-4 md:grid-cols-2">
-                <Field label="Do I still want this?"><Textarea {...form.register(`goalReviews.${index}.stillWantThis`)} /></Field>
-                <Field label="Reality or fantasy?"><Textarea {...form.register(`goalReviews.${index}.realityVsFantasy`)} /></Field>
-                <Field label="Still connected to values?"><Textarea {...form.register(`goalReviews.${index}.valuesConnection`)} /></Field>
-                <Field label="Is the cost acceptable?"><Textarea {...form.register(`goalReviews.${index}.costAcceptable`)} /></Field>
-                <Field label="Damage to another domain?" className="md:col-span-2"><Textarea {...form.register(`goalReviews.${index}.domainDamage`)} /></Field>
-              </div>
+              <details className="rounded-md border bg-background p-4">
+                <summary className="cursor-pointer text-sm font-medium">Advanced revalidation</summary>
+                <div className="mt-4 grid gap-4 md:grid-cols-2">
+                  <Field label="Do I still want this?"><Textarea {...form.register(`goalReviews.${index}.stillWantThis`)} /></Field>
+                  <Field label="Reality or fantasy?"><Textarea {...form.register(`goalReviews.${index}.realityVsFantasy`)} /></Field>
+                  <Field label="Still connected to values?"><Textarea {...form.register(`goalReviews.${index}.valuesConnection`)} /></Field>
+                  <Field label="Is the cost acceptable?"><Textarea {...form.register(`goalReviews.${index}.costAcceptable`)} /></Field>
+                  <Field label="Damage to another domain?" className="md:col-span-2"><Textarea {...form.register(`goalReviews.${index}.domainDamage`)} /></Field>
+                </div>
+              </details>
             </CardContent>
           </Card>
         );

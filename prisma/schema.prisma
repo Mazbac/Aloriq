@@ -12,6 +12,8 @@ model User {
   name                  String
   email                 String?
   preferredWeekStartDay Int          @default(1)
+  currency              String       @default("currency")
+  setupCompletedAt      DateTime?
   createdAt             DateTime     @default(now())
   updatedAt             DateTime     @updatedAt
   domains               LifeDomain[]

@@ -25,6 +25,7 @@ const titles: Record<string, string> = {
   "/reviews": "Reviews",
   "/reviews/new": "Weekly Review",
   "/settings": "Settings",
+  "/setup": "Guided Setup",
 };
 
 function routeTitle(pathname: string) {
@@ -32,7 +33,7 @@ function routeTitle(pathname: string) {
   if (pathname.startsWith("/goals/") && pathname.endsWith("/edit")) return "Edit Goal";
   if (pathname.startsWith("/goals/")) return "Goal Detail";
   if (pathname.startsWith("/reviews/")) return "Review Detail";
-  return "Alignment";
+  return "Aloriq";
 }
 
 function NavLinks({ onNavigate }: { onNavigate?: () => void }) {
@@ -69,7 +70,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
     <div className="min-h-screen">
       <aside className="fixed inset-y-0 left-0 hidden w-64 border-r bg-card px-4 py-6 lg:block">
         <Link href="/dashboard" className="mb-8 block px-3">
-          <div className="text-xl font-semibold tracking-normal">Alignment</div>
+          <div className="text-xl font-semibold tracking-normal">Aloriq</div>
           <div className="mt-1 text-xs text-muted-foreground">Choose, measure, review.</div>
         </Link>
         <NavLinks />
@@ -86,14 +87,14 @@ export function AppShell({ children }: { children: React.ReactNode }) {
               </SheetTrigger>
               <SheetContent>
                 <SheetHeader className="mb-6">
-                  <SheetTitle>Alignment</SheetTitle>
+                  <SheetTitle>Aloriq</SheetTitle>
                 </SheetHeader>
                 <NavLinks />
               </SheetContent>
             </Sheet>
             <div>
               <h1 className="text-xl font-semibold tracking-normal">{title}</h1>
-              <p className="hidden text-sm text-muted-foreground sm:block">Goals above tasks. Alignment above activity.</p>
+              <p className="hidden text-sm text-muted-foreground sm:block">Goals above tasks. Aloriq keeps the alignment visible.</p>
             </div>
           </div>
         </header>

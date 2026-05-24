@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
 import { enumLabel, formatDate } from "@/lib/utils";
+import { AddRecommendedMetricStackButton } from "@/components/goals/goal-tools";
 
 type GoalCardData = Goal & {
   lifeDomain: LifeDomain;
@@ -51,12 +52,13 @@ export function GoalCard({ goal }: { goal: GoalCardData }) {
           {completeness.missing.length ? <p className="text-xs text-muted-foreground">Missing {completeness.missing.map(enumLabel).join(", ")}.</p> : null}
         </div>
         <div className="rounded-md bg-muted p-3 text-sm">
-          <span className="font-medium">Weekly commitment: </span>
+          <span className="font-medium">This week commitment: </span>
           {commitment ? `${commitment.statement} (${enumLabel(commitment.status)})` : "None set"}
         </div>
         <Button asChild variant="outline">
           <Link href={`/goals/${goal.id}`}>Open goal <ArrowRight className="size-4" /></Link>
         </Button>
+        <AddRecommendedMetricStackButton goalId={goal.id} />
       </CardContent>
     </Card>
   );

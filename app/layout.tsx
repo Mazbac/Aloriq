@@ -3,7 +3,7 @@ import "./globals.css";
 import { AppShell } from "@/components/app-shell/app-shell";
 
 export const metadata: Metadata = {
-  title: "Alignment",
+  title: "Aloriq",
   description: "Goal alignment and weekly review MVP.",
 };
 

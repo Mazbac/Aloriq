@@ -1,10 +1,13 @@
 "use server";
 
-import { GoalStatus, ReviewDecision } from "@prisma/client";
+import { GoalStatus } from "@prisma/client";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { prisma, getDemoUser } from "@/lib/prisma";
 import { runBreakdown } from "@/lib/breakdown";
+import { breakdownTemplates } from "@/lib/breakdown/templates";
+import { assertActivatable, currentWeekRange } from "@/lib/goals/activation";
+import { statusForReviewDecision } from "@/lib/reviews/decisions";
 import {
   breakdownAssumptionSchema,
   commitmentSchema,
@@ -94,12 +97,40 @@ export async function deleteCriterion(id: string): Promise<ActionResult> {
   }
 }
 
+export async function saveTopValues(valueIds: string[]): Promise<ActionResult> {
+  try {
+    const user = await getDemoUser();
+    await prisma.$transaction(async (tx) => {
+      await tx.value.updateMany({ where: { userId: user.id }, data: { rank: null } });
+      for (const [index, id] of valueIds.slice(0, 5).entries()) {
+        await tx.value.update({ where: { id }, data: { rank: index + 1 } });
+      }
+    });
+    revalidateApp();
+    revalidatePath("/setup");
+    return { ok: true, message: "Top values saved." };
+  } catch (error) {
+    return { ok: false, message: errorMessage(error) };
+  }
+}
+
 async function assertGoalCanBeActive(data: { id?: string; status: GoalStatus; successDefinition: string; valueIds: string[] }) {
   if (data.status !== GoalStatus.ACTIVE) return;
-  if (!data.successDefinition.trim()) throw new Error("Active goals need a success definition.");
-  if (data.valueIds.length === 0) throw new Error("Active goals need at least one connected value.");
-  const metricCount = data.id ? await prisma.metric.count({ where: { goalId: data.id } }) : 0;
-  if (metricCount === 0) throw new Error("Create the goal as Draft first, then add metrics before making it Active.");
+  const user = await getDemoUser();
+  const week = currentWeekRange(new Date(), user.preferredWeekStartDay);
+  const [metrics, currentWeekCommitmentCount] = data.id
+    ? await Promise.all([
+        prisma.metric.findMany({ where: { goalId: data.id }, select: { type: true } }),
+        prisma.weeklyCommitment.count({ where: { goalId: data.id, weekStartDate: { gte: week.start, lt: week.end } } }),
+      ])
+    : [[], 0];
+  assertActivatable({
+    status: data.status,
+    successDefinition: data.successDefinition,
+    connectedValueCount: data.valueIds.length,
+    metrics,
+    currentWeekCommitmentCount,
+  });
 }
 
 export async function saveGoal(input: unknown): Promise<ActionResult> {
@@ -164,6 +195,31 @@ export async function saveMetric(input: unknown): Promise<ActionResult> {
     revalidateApp();
     revalidatePath(`/goals/${data.goalId}`);
     return { ok: true, id: metric.id, message: "Metric added." };
+  } catch (error) {
+    return { ok: false, message: errorMessage(error) };
+  }
+}
+
+export async function addRecommendedMetricStack(goalId: string): Promise<ActionResult> {
+  try {
+    const goal = await prisma.goal.findUniqueOrThrow({ where: { id: goalId }, include: { metrics: true } });
+    const template = breakdownTemplates[goal.goalType];
+    const existing = new Set(goal.metrics.map((metric) => `${metric.type}:${metric.name.toLowerCase()}`));
+    const metricsToCreate = template.metrics.filter((metric) => !existing.has(`${metric.type}:${metric.name.toLowerCase()}`));
+    if (!metricsToCreate.length) return { ok: true, message: "Recommended metric stack already exists." };
+    await prisma.metric.createMany({
+      data: metricsToCreate.map((metric) => ({
+        goalId,
+        name: metric.name,
+        type: metric.type,
+        unit: metric.unit,
+        direction: metric.direction,
+        frequency: metric.frequency,
+      })),
+    });
+    revalidateApp();
+    revalidatePath(`/goals/${goalId}`);
+    return { ok: true, message: `Added ${metricsToCreate.length} recommended metrics.` };
   } catch (error) {
     return { ok: false, message: errorMessage(error) };
   }
@@ -289,12 +345,7 @@ export async function saveReview(input: unknown): Promise<ActionResult> {
 
       for (const goalReview of data.goalReviews) {
         if (!goalReview.updateStatus) continue;
-        const statusByDecision: Partial<Record<ReviewDecision, GoalStatus>> = {
-          PAUSE: GoalStatus.PAUSED,
-          KILL: GoalStatus.KILLED,
-          COMPLETE: GoalStatus.COMPLETED,
-        };
-        const status = statusByDecision[goalReview.decision];
+        const status = statusForReviewDecision(goalReview.decision, goalReview.updateStatus);
         if (status) await tx.goal.update({ where: { id: goalReview.goalId }, data: { status } });
       }
       return created;
@@ -312,10 +363,21 @@ export async function updateSettings(input: unknown): Promise<ActionResult> {
     const data = settingsSchema.parse(input);
     await prisma.user.update({
       where: { id: user.id },
-      data: { name: data.name, email: data.email || null, preferredWeekStartDay: data.preferredWeekStartDay },
+      data: { name: data.name, email: data.email || null, preferredWeekStartDay: data.preferredWeekStartDay, currency: data.currency },
     });
     revalidateApp();
     return { ok: true, message: "Settings saved." };
+  } catch (error) {
+    return { ok: false, message: errorMessage(error) };
+  }
+}
+
+export async function completeSetup(): Promise<ActionResult> {
+  try {
+    const user = await getDemoUser();
+    await prisma.user.update({ where: { id: user.id }, data: { setupCompletedAt: new Date() } });
+    revalidateApp();
+    return { ok: true, message: "Setup completed." };
   } catch (error) {
     return { ok: false, message: errorMessage(error) };
   }

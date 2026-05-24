@@ -5,16 +5,16 @@ export const breakdownTemplates: Record<GoalType, BreakdownTemplate> = {
   BUSINESS_REVENUE: {
     type: "BUSINESS_REVENUE",
     assumptions: [
-      { key: "targetArr", label: "Target ARR", unit: "USD", required: true },
-      { key: "currentArr", label: "Current ARR", unit: "USD", required: true },
+      { key: "targetArr", label: "Target ARR", unit: "currency", required: true },
+      { key: "currentArr", label: "Current ARR", unit: "currency", required: true },
       { key: "targetDate", label: "Target date", required: true, placeholder: "YYYY-MM-DD" },
-      { key: "arpa", label: "Average revenue per customer per month", unit: "USD", required: true },
+      { key: "arpa", label: "Average revenue per customer per month", unit: "currency", required: true },
       { key: "trialConversion", label: "Trial-to-customer conversion rate", placeholder: "0.25" },
       { key: "leadConversion", label: "Lead-to-trial conversion rate", placeholder: "0.2" },
       { key: "workingDaysPerWeek", label: "Working days per week", unit: "days", required: true },
     ],
     metrics: [
-      { name: "ARR or MRR", type: "OUTCOME", unit: "USD", direction: "INCREASE", frequency: "MONTHLY" },
+      { name: "ARR or MRR", type: "OUTCOME", unit: "currency", direction: "INCREASE", frequency: "MONTHLY" },
       { name: "Qualified leads", type: "LEAD", unit: "leads", direction: "INCREASE", frequency: "WEEKLY" },
       { name: "Trials or demos", type: "LEAD", unit: "trials", direction: "INCREASE", frequency: "WEEKLY" },
       { name: "Churn or burnout", type: "RISK", unit: "score", direction: "DECREASE", frequency: "WEEKLY" },
@@ -24,15 +24,15 @@ export const breakdownTemplates: Record<GoalType, BreakdownTemplate> = {
   PERSONAL_FINANCE: {
     type: "PERSONAL_FINANCE",
     assumptions: [
-      { key: "targetSavings", label: "Target savings", unit: "USD", required: true },
-      { key: "currentSavings", label: "Current savings", unit: "USD", required: true },
+      { key: "targetSavings", label: "Target savings", unit: "currency", required: true },
+      { key: "currentSavings", label: "Current savings", unit: "currency", required: true },
       { key: "targetDate", label: "Target date", required: true, placeholder: "YYYY-MM-DD" },
-      { key: "monthlyIncome", label: "Monthly income", unit: "USD" },
-      { key: "monthlyExpenses", label: "Monthly expenses", unit: "USD" },
+      { key: "monthlyIncome", label: "Monthly income", unit: "currency" },
+      { key: "monthlyExpenses", label: "Monthly expenses", unit: "currency" },
     ],
     metrics: [
-      { name: "Savings balance", type: "OUTCOME", unit: "USD", direction: "INCREASE", frequency: "MONTHLY" },
-      { name: "Savings contribution", type: "LEAD", unit: "USD", direction: "INCREASE", frequency: "MONTHLY" },
+      { name: "Savings balance", type: "OUTCOME", unit: "currency", direction: "INCREASE", frequency: "MONTHLY" },
+      { name: "Savings contribution", type: "LEAD", unit: "currency", direction: "INCREASE", frequency: "MONTHLY" },
       { name: "Stress", type: "RISK", unit: "score", direction: "DECREASE", frequency: "WEEKLY" },
       { name: "Security or freedom", type: "ALIGNMENT", unit: "score", direction: "SCORE", frequency: "WEEKLY" },
     ],
