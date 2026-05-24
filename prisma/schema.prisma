@@ -1,0 +1,299 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id                    String       @id @default(cuid())
+  name                  String
+  email                 String?
+  preferredWeekStartDay Int          @default(1)
+  createdAt             DateTime     @default(now())
+  updatedAt             DateTime     @updatedAt
+  domains               LifeDomain[]
+  needs                 Need[]
+  values                Value[]
+  goals                 Goal[]
+  reviews               Review[]
+}
+
+model LifeDomain {
+  id                String   @id @default(cuid())
+  userId            String
+  name              String
+  description       String?
+  satisfactionScore Int
+  importanceScore   Int
+  riskScore         Int
+  notes             String?
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+  user              User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  goals             Goal[]
+}
+
+model Need {
+  id          String     @id @default(cuid())
+  userId      String
+  name        String
+  description String?
+  createdAt   DateTime   @default(now())
+  updatedAt   DateTime   @updatedAt
+  user        User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  goals       GoalNeed[]
+}
+
+model Value {
+  id          String           @id @default(cuid())
+  userId      String
+  name        String
+  description String?
+  rank        Int?
+  createdAt   DateTime         @default(now())
+  updatedAt   DateTime         @updatedAt
+  user        User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+  criteria    ValueCriterion[]
+  goals       GoalValue[]
+}
+
+model ValueCriterion {
+  id        String   @id @default(cuid())
+  valueId   String
+  statement String
+  isHealthy Boolean  @default(true)
+  notes     String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  value     Value    @relation(fields: [valueId], references: [id], onDelete: Cascade)
+}
+
+model Goal {
+  id                   String                @id @default(cuid())
+  userId               String
+  title                String
+  description          String?
+  lifeDomainId         String
+  goalType             GoalType
+  status               GoalStatus            @default(DRAFT)
+  targetDate           DateTime?
+  startDate            DateTime?
+  whyNow               String?
+  successDefinition    String
+  tradeOffs            String?
+  notWorthItIf         String?
+  externalWorkUrl      String?
+  createdAt            DateTime              @default(now())
+  updatedAt            DateTime              @updatedAt
+  user                 User                  @relation(fields: [userId], references: [id], onDelete: Cascade)
+  lifeDomain           LifeDomain            @relation(fields: [lifeDomainId], references: [id])
+  needs                GoalNeed[]
+  values               GoalValue[]
+  criteria             GoalCriterion[]
+  metrics              Metric[]
+  weeklyCommitments    WeeklyCommitment[]
+  reviews              GoalReview[]
+  breakdownAssumptions BreakdownAssumption[]
+  breakdownOutputs     BreakdownOutput[]
+}
+
+model GoalNeed {
+  goalId String
+  needId String
+  goal   Goal   @relation(fields: [goalId], references: [id], onDelete: Cascade)
+  need   Need   @relation(fields: [needId], references: [id], onDelete: Cascade)
+
+  @@id([goalId, needId])
+}
+
+model GoalValue {
+  goalId  String
+  valueId String
+  goal    Goal   @relation(fields: [goalId], references: [id], onDelete: Cascade)
+  value   Value  @relation(fields: [valueId], references: [id], onDelete: Cascade)
+
+  @@id([goalId, valueId])
+}
+
+model GoalCriterion {
+  id        String   @id @default(cuid())
+  goalId    String
+  statement String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  goal      Goal     @relation(fields: [goalId], references: [id], onDelete: Cascade)
+}
+
+model Metric {
+  id           String          @id @default(cuid())
+  goalId       String
+  name         String
+  type         MetricType
+  unit         String?
+  targetValue  Decimal?
+  currentValue Decimal?
+  direction    MetricDirection
+  frequency    MetricFrequency
+  notes        String?
+  createdAt    DateTime        @default(now())
+  updatedAt    DateTime        @updatedAt
+  goal         Goal            @relation(fields: [goalId], references: [id], onDelete: Cascade)
+  entries      MetricEntry[]
+}
+
+model MetricEntry {
+  id        String   @id @default(cuid())
+  metricId  String
+  value     Decimal
+  note      String?
+  entryDate DateTime
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  metric    Metric   @relation(fields: [metricId], references: [id], onDelete: Cascade)
+}
+
+model WeeklyCommitment {
+  id            String           @id @default(cuid())
+  goalId        String
+  weekStartDate DateTime
+  statement     String
+  targetValue   Decimal?
+  actualValue   Decimal?
+  unit          String?
+  status        CommitmentStatus @default(PLANNED)
+  notes         String?
+  createdAt     DateTime         @default(now())
+  updatedAt     DateTime         @updatedAt
+  goal          Goal             @relation(fields: [goalId], references: [id], onDelete: Cascade)
+}
+
+model Review {
+  id                       String       @id @default(cuid())
+  userId                   String
+  reviewType               ReviewType   @default(WEEKLY)
+  periodStart              DateTime
+  periodEnd                DateTime
+  wins                     String?
+  misses                   String?
+  blockers                 String?
+  lessons                  String?
+  domainDamage             String?
+  continueAdjustPauseKill  String?
+  createdAt                DateTime     @default(now())
+  updatedAt                DateTime     @updatedAt
+  user                     User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  goalReviews              GoalReview[]
+}
+
+model GoalReview {
+  id                  String         @id @default(cuid())
+  reviewId            String
+  goalId              String
+  progressSummary     String?
+  alignmentScore      Int
+  costScore           Int
+  confidenceScore     Int
+  decision            ReviewDecision
+  decisionReason      String?
+  stillWantThis       String?
+  realityVsFantasy    String?
+  valuesConnection    String?
+  costAcceptable      String?
+  domainDamage        String?
+  createdAt           DateTime       @default(now())
+  updatedAt           DateTime       @updatedAt
+  review              Review         @relation(fields: [reviewId], references: [id], onDelete: Cascade)
+  goal                Goal           @relation(fields: [goalId], references: [id], onDelete: Cascade)
+}
+
+model BreakdownAssumption {
+  id        String   @id @default(cuid())
+  goalId    String
+  key       String
+  label     String
+  value     String
+  unit      String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  goal      Goal     @relation(fields: [goalId], references: [id], onDelete: Cascade)
+}
+
+model BreakdownOutput {
+  id          String   @id @default(cuid())
+  goalId      String
+  label       String
+  value       String
+  unit        String?
+  period      String?
+  explanation String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  goal        Goal     @relation(fields: [goalId], references: [id], onDelete: Cascade)
+}
+
+enum GoalType {
+  BUSINESS_REVENUE
+  PERSONAL_FINANCE
+  HEALTH_BODY
+  RELATIONSHIP
+  SKILL_LEARNING
+  CAREER
+  MENTAL_EMOTIONAL
+  MEANING_SPIRITUALITY
+  LIFESTYLE_ENVIRONMENT
+  CUSTOM
+}
+
+enum GoalStatus {
+  DRAFT
+  ACTIVE
+  PAUSED
+  COMPLETED
+  KILLED
+}
+
+enum MetricType {
+  OUTCOME
+  LEAD
+  RISK
+  ALIGNMENT
+}
+
+enum MetricDirection {
+  INCREASE
+  DECREASE
+  MAINTAIN
+  BOOLEAN
+  SCORE
+}
+
+enum MetricFrequency {
+  DAILY
+  WEEKLY
+  MONTHLY
+  QUARTERLY
+}
+
+enum CommitmentStatus {
+  PLANNED
+  DONE
+  MISSED
+  PARTIAL
+  CANCELLED
+}
+
+enum ReviewType {
+  WEEKLY
+  MONTHLY
+}
+
+enum ReviewDecision {
+  CONTINUE
+  ADJUST
+  PAUSE
+  KILL
+  COMPLETE
+}
