@@ -1,6 +1,6 @@
 import { CommitmentStatus, GoalStatus, GoalType, MetricDirection, MetricFrequency, MetricType, ReviewDecision } from "@prisma/client";
 import { z } from "zod";
-import { nullableNumberSchema, optionalDateSchema, optionalUrlSchema, scoreSchema, text } from "./common";
+import { nullableNumberSchema, optionalDateSchema, optionalUrlSchema, requiredNumberSchema, scoreSchema, text } from "./common";
 
 export const lifeDomainSchema = z.object({
   id: z.string(),
@@ -59,7 +59,7 @@ export const metricSchema = z.object({
 export const metricEntrySchema = z.object({
   metricId: z.string(),
   goalId: z.string(),
-  value: z.coerce.number(),
+  value: requiredNumberSchema,
   entryDate: optionalDateSchema.refine(Boolean, "Date is required."),
   note: text,
 });

@@ -5,8 +5,9 @@ import { getDemoUser, prisma } from "@/lib/prisma";
 import { activationChecklist, currentWeekRange } from "@/lib/goals/activation";
 import { interpretMetricTrend } from "@/lib/goals/trends";
 import { decimalToNumber, enumLabel, formatDate } from "@/lib/utils";
+import { formatMetricValue } from "@/lib/formatters";
 import { metricCompleteness } from "@/components/goals/goal-card";
-import { AddRecommendedMetricStackButton, BreakdownForm, CommitmentForm, CommitmentStatusForm, MetricEntryForm, MetricForm } from "@/components/goals/goal-tools";
+import { ActivateGoalButton, AddRecommendedMetricStackButton, BreakdownForm, CommitmentForm, CommitmentStatusForm, MetricEntryForm, MetricForm } from "@/components/goals/goal-tools";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -46,6 +47,7 @@ export default async function GoalDetailPage({ params }: { params: Promise<{ id:
     currentWeekCommitmentCount: thisWeekCommitments.length,
   });
   const suggestedCommitment = goal.breakdownOutputs.find((output) => output.label === "Suggested weekly commitment")?.value;
+  const missingActivationItems = checklist.filter((item) => !item.complete).map((item) => item.label);
 
   return (
     <div className="space-y-6">
@@ -86,13 +88,16 @@ export default async function GoalDetailPage({ params }: { params: Promise<{ id:
 
           <Card>
             <CardHeader><CardTitle>Activation checklist</CardTitle><CardDescription>Only Active goals need all four checks.</CardDescription></CardHeader>
-            <CardContent className="grid gap-3 md:grid-cols-2">
-              {checklist.map((item) => (
-                <div key={item.key} className="flex items-center justify-between gap-3 rounded-md border bg-background p-3">
-                  <span className="text-sm">{item.label}</span>
-                  <Badge variant={item.complete ? "secondary" : "destructive"}>{item.complete ? "Ready" : "Missing"}</Badge>
-                </div>
-              ))}
+            <CardContent className="space-y-4">
+              <div className="grid gap-3 md:grid-cols-2">
+                {checklist.map((item) => (
+                  <div key={item.key} className="flex items-center justify-between gap-3 rounded-md border bg-background p-3">
+                    <span className="text-sm">{item.label}</span>
+                    <Badge variant={item.complete ? "secondary" : "destructive"}>{item.complete ? "Ready" : "Missing"}</Badge>
+                  </div>
+                ))}
+              </div>
+              {goal.status === "DRAFT" ? <ActivateGoalButton goalId={goal.id} disabled={missingActivationItems.length > 0} missing={missingActivationItems} /> : null}
             </CardContent>
           </Card>
 
@@ -134,7 +139,7 @@ export default async function GoalDetailPage({ params }: { params: Promise<{ id:
                         <div className="font-medium">{metric.name}</div>
                         <Badge variant="secondary">{enumLabel(metric.type)}</Badge>
                       </div>
-                      <div className="mt-2 text-sm text-muted-foreground">Current: {latestValue ?? "No value"} {metric.unit || ""} · {trend}</div>
+                      <div className="mt-2 text-sm text-muted-foreground">Current: {formatMetricValue(latestValue, metric.unit, user.currency)} · {trend}</div>
                       <MetricEntryForm metric={metric} goalId={goal.id} />
                     </div>
                   );
@@ -153,7 +158,7 @@ export default async function GoalDetailPage({ params }: { params: Promise<{ id:
               {goal.breakdownOutputs.length ? goal.breakdownOutputs.map((output) => (
                 <div key={output.id} className="rounded-md border bg-background p-3">
                   <div className="text-sm text-muted-foreground">{output.label}</div>
-                  <div className="mt-1 text-xl font-semibold">{output.value} {output.unit}</div>
+                  <div className="mt-1 text-xl font-semibold">{formatMetricValue(output.value, output.unit, user.currency)}</div>
                   {output.period ? <div className="text-xs text-muted-foreground">per {output.period}</div> : null}
                   {output.explanation ? <p className="mt-2 text-xs text-muted-foreground">{output.explanation}</p> : null}
                 </div>
@@ -164,8 +169,8 @@ export default async function GoalDetailPage({ params }: { params: Promise<{ id:
 
         <TabsContent value="commitments" className="space-y-4">
           <CommitmentForm goalId={goal.id} suggested={suggestedCommitment} />
-          <CommitmentList title="This week" commitments={thisWeekCommitments} goalId={goal.id} />
-          {pastCommitments.length ? <CommitmentList title="Past commitments" commitments={pastCommitments.slice(0, 5)} goalId={goal.id} /> : null}
+          <CommitmentList title="This week" commitments={thisWeekCommitments} goalId={goal.id} userCurrency={user.currency} />
+          {pastCommitments.length ? <CommitmentList title="Past commitments" commitments={pastCommitments.slice(0, 5)} goalId={goal.id} userCurrency={user.currency} /> : null}
         </TabsContent>
 
         <TabsContent value="reviews" className="space-y-4">
@@ -208,7 +213,7 @@ type CommitmentListItem = {
   notes: string | null;
 };
 
-function CommitmentList({ title, commitments, goalId }: { title: string; commitments: CommitmentListItem[]; goalId: string }) {
+function CommitmentList({ title, commitments, goalId, userCurrency }: { title: string; commitments: CommitmentListItem[]; goalId: string; userCurrency: string }) {
   return (
     <Card>
       <CardHeader><CardTitle>{title}</CardTitle><CardDescription>Weekly commitments stay lightweight.</CardDescription></CardHeader>
@@ -219,7 +224,7 @@ function CommitmentList({ title, commitments, goalId }: { title: string; commitm
               <div className="font-medium">{commitment.statement}</div>
               <Badge variant="secondary">{enumLabel(commitment.status)}</Badge>
             </div>
-            <p className="mt-1 text-sm text-muted-foreground">Week of {formatDate(commitment.weekStartDate)} · target {decimalToNumber(commitment.targetValue) ?? "-"} {commitment.unit ?? ""}</p>
+            <p className="mt-1 text-sm text-muted-foreground">Week of {formatDate(commitment.weekStartDate)} · target {commitment.targetValue == null ? "-" : formatMetricValue(commitment.targetValue, commitment.unit, userCurrency)}</p>
             <CommitmentStatusForm id={commitment.id} goalId={goalId} status={commitment.status} actualValue={commitment.actualValue} notes={commitment.notes} />
           </div>
         )) : <p className="text-sm text-muted-foreground">No commitments in this section.</p>}

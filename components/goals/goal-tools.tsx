@@ -5,7 +5,7 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { CommitmentStatus, GoalType, MetricDirection, MetricFrequency, MetricType, type BreakdownAssumption, type Metric } from "@prisma/client";
 import { Plus } from "lucide-react";
-import { addRecommendedMetricStack, runGoalBreakdown, saveCommitment, saveMetric, saveMetricEntry, updateCommitmentStatus, type ActionResult } from "@/app/actions";
+import { activateGoal, addRecommendedMetricStack, runGoalBreakdown, saveCommitment, saveMetric, saveMetricEntry, updateCommitmentStatus, type ActionResult } from "@/app/actions";
 import { breakdownTemplates } from "@/lib/breakdown/templates";
 import { commitmentSchema, metricEntrySchema, metricSchema } from "@/lib/validations/schemas";
 import { enumLabel, toDateInput } from "@/lib/utils";
@@ -53,12 +53,12 @@ export function MetricForm({ goalId }: { goalId: string }) {
 export function MetricEntryForm({ metric, goalId }: { metric: Metric; goalId: string }) {
   const [isPending, startTransition] = useTransition();
   const [result, setResult] = useState<ActionResult | null>(null);
-  const form = useForm({ resolver: zodResolver(metricEntrySchema), defaultValues: { metricId: metric.id, goalId, value: 0, entryDate: toDateInput(new Date()), note: "" } });
+  const form = useForm({ resolver: zodResolver(metricEntrySchema), defaultValues: { metricId: metric.id, goalId, value: "", entryDate: toDateInput(new Date()), note: "" } });
   function onSubmit(values: unknown) {
     startTransition(async () => {
       const next = await saveMetricEntry(values);
       setResult(next);
-      if (next.ok) form.reset({ metricId: metric.id, goalId, value: 0, entryDate: toDateInput(new Date()), note: "" });
+      if (next.ok) form.reset({ metricId: metric.id, goalId, value: "", entryDate: toDateInput(new Date()), note: "" });
     });
   }
   return (
@@ -67,7 +67,10 @@ export function MetricEntryForm({ metric, goalId }: { metric: Metric; goalId: st
       <Input type="date" {...form.register("entryDate")} />
       <Input placeholder="Note" {...form.register("note")} />
       <Button size="sm" disabled={isPending}>Log</Button>
-      <div className="sm:col-span-4"><ActionMessage result={result} /></div>
+      <div className="sm:col-span-4">
+        {form.formState.errors.value ? <p className="text-xs font-medium text-destructive">{form.formState.errors.value.message as string}</p> : null}
+        <ActionMessage result={result} />
+      </div>
     </form>
   );
 }
@@ -80,6 +83,20 @@ export function AddRecommendedMetricStackButton({ goalId }: { goalId: string }) 
       <Button type="button" variant="outline" disabled={isPending} onClick={() => startTransition(async () => setResult(await addRecommendedMetricStack(goalId)))}>
         {isPending ? "Adding..." : "Add recommended metric stack"}
       </Button>
+      <ActionMessage result={result} />
+    </div>
+  );
+}
+
+export function ActivateGoalButton({ goalId, disabled, missing }: { goalId: string; disabled: boolean; missing: string[] }) {
+  const [isPending, startTransition] = useTransition();
+  const [result, setResult] = useState<ActionResult | null>(null);
+  return (
+    <div className="space-y-2">
+      <Button type="button" disabled={disabled || isPending} onClick={() => startTransition(async () => setResult(await activateGoal(goalId)))}>
+        {isPending ? "Activating..." : "Activate goal"}
+      </Button>
+      {disabled ? <p className="text-sm text-muted-foreground">Missing: {missing.join("; ")}</p> : null}
       <ActionMessage result={result} />
     </div>
   );

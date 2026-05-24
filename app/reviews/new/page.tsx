@@ -19,5 +19,5 @@ export default async function NewReviewPage() {
   const periodStart = startOfWeek(new Date(), user.preferredWeekStartDay);
   const periodEnd = new Date(periodStart);
   periodEnd.setDate(periodStart.getDate() + 6);
-  return <ReviewForm goals={goals} periodStart={periodStart} periodEnd={periodEnd} />;
+  return <ReviewForm goals={goals} periodStart={periodStart} periodEnd={periodEnd} userCurrency={user.currency} />;
 }

@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { getDemoUser, prisma } from "@/lib/prisma";
-import { currentWeekRange } from "@/lib/goals/activation";
+import { currentWeekRange, metricStackMissing } from "@/lib/goals/activation";
 import { LifeDomainForm } from "@/components/life-map/life-domain-form";
 import { GoalForm } from "@/components/goals/goal-form";
 import { AddRecommendedMetricStackButton, CommitmentForm } from "@/components/goals/goal-tools";
@@ -29,6 +29,13 @@ export default async function SetupPage() {
     }),
   ]);
   const topValues = values.filter((value) => value.rank);
+  const setupReady = Boolean(
+    firstGoal &&
+      metricStackMissing(firstGoal.metrics).length === 0 &&
+      firstGoal.weeklyCommitments.length > 0 &&
+      topValues.length > 0 &&
+      topValues.some((value) => value.criteria.length > 0),
+  );
 
   return (
     <div className="space-y-6">
@@ -86,7 +93,7 @@ export default async function SetupPage() {
         )}
       </SetupStep>
 
-      <SetupCompletion ready={Boolean(firstGoal && firstGoal.metrics.length >= 4 && firstGoal.weeklyCommitments.length)} />
+      <SetupCompletion ready={setupReady} />
     </div>
   );
 }

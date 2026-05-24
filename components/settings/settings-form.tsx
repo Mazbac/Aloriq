@@ -46,7 +46,7 @@ export function SettingsForm({ user }: { user: User }) {
             </Select>
           </Field>
           <Field label="Currency unit" error={form.formState.errors.currency?.message as string | undefined}>
-            <Input placeholder="currency" {...form.register("currency")} />
+            <Input placeholder="USD" {...form.register("currency")} />
           </Field>
           <div className="rounded-md bg-muted p-3 text-sm text-muted-foreground">To reset demo data safely, run <code>npm run db:reset</code> locally. There is no in-app destructive reset button in MVP1.</div>
           <div className="flex items-center gap-3"><Button disabled={isPending}>{isPending ? "Saving..." : "Save settings"}</Button><ActionMessage result={result} /></div>

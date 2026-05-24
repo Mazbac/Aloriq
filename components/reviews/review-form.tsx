@@ -7,7 +7,8 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { ReviewDecision, type Goal, type Metric, type MetricEntry, type WeeklyCommitment } from "@prisma/client";
 import { saveReview, type ActionResult } from "@/app/actions";
 import { reviewSchema } from "@/lib/validations/schemas";
-import { decimalToNumber, enumLabel, toDateInput } from "@/lib/utils";
+import { enumLabel, toDateInput } from "@/lib/utils";
+import { formatMetricValue } from "@/lib/formatters";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -21,7 +22,7 @@ type ReviewGoal = Goal & {
   weeklyCommitments: WeeklyCommitment[];
 };
 
-export function ReviewForm({ goals, periodStart, periodEnd }: { goals: ReviewGoal[]; periodStart: Date; periodEnd: Date }) {
+export function ReviewForm({ goals, periodStart, periodEnd, userCurrency }: { goals: ReviewGoal[]; periodStart: Date; periodEnd: Date; userCurrency: string }) {
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
   const [result, setResult] = useState<ActionResult | null>(null);
@@ -73,11 +74,16 @@ export function ReviewForm({ goals, periodStart, periodEnd }: { goals: ReviewGoa
           <Field label="Period start" error={form.formState.errors.periodStart?.message as string | undefined}><Input type="date" {...form.register("periodStart")} /></Field>
           <Field label="Period end" error={form.formState.errors.periodEnd?.message as string | undefined}><Input type="date" {...form.register("periodEnd")} /></Field>
           <Field label="Wins"><Textarea {...form.register("wins")} /></Field>
-          <Field label="Misses"><Textarea {...form.register("misses")} /></Field>
           <Field label="Blockers"><Textarea {...form.register("blockers")} /></Field>
           <Field label="Lessons"><Textarea {...form.register("lessons")} /></Field>
-          <Field label="Domain damage" className="md:col-span-2"><Textarea {...form.register("domainDamage")} /></Field>
-          <Field label="Continue, adjust, pause, kill summary" className="md:col-span-2"><Textarea {...form.register("continueAdjustPauseKill")} /></Field>
+          <details className="rounded-md border bg-background p-4 md:col-span-2">
+            <summary className="cursor-pointer text-sm font-medium">Advanced weekly notes</summary>
+            <div className="mt-4 grid gap-4 md:grid-cols-2">
+              <Field label="Misses"><Textarea {...form.register("misses")} /></Field>
+              <Field label="Domain damage"><Textarea {...form.register("domainDamage")} /></Field>
+              <Field label="Continue, adjust, pause, kill summary" className="md:col-span-2"><Textarea {...form.register("continueAdjustPauseKill")} /></Field>
+            </div>
+          </details>
         </CardContent>
       </Card>
 
@@ -97,7 +103,7 @@ export function ReviewForm({ goals, periodStart, periodEnd }: { goals: ReviewGoa
             </CardHeader>
             <CardContent className="space-y-5">
               <div className="grid gap-3 md:grid-cols-2">
-                <Info title="Latest metrics" items={goal.metrics.map((metric) => `${metric.name}: ${decimalToNumber(metric.entries[0]?.value ?? metric.currentValue) ?? "-"} ${metric.unit ?? ""}`)} />
+                <Info title="Latest metrics" items={goal.metrics.map((metric) => `${metric.name}: ${formatMetricValue(metric.entries[0]?.value ?? metric.currentValue, metric.unit, userCurrency)}`)} />
                 <Info title="This week's commitments" items={goal.weeklyCommitments.map((commitment) => `${commitment.statement} (${enumLabel(commitment.status)})`)} />
               </div>
               <div className="grid gap-4 md:grid-cols-3">

@@ -15,7 +15,7 @@ export const dynamic = "force-dynamic";
 
 export default async function DashboardPage() {
   const user = await getDemoUser();
-  if (!user.setupCompletedAt) redirect("/setup");
+  if (!user.setupCompletedAt && !user.setupSkippedAt) redirect("/setup");
   const week = currentWeekRange(new Date(), user.preferredWeekStartDay);
   const [goals, domains, reviews, commitments, staleCommitments] = await Promise.all([
     prisma.goal.findMany({
@@ -39,6 +39,19 @@ export default async function DashboardPage() {
 
   return (
     <div className="space-y-6">
+      {user.setupSkippedAt && !user.setupCompletedAt ? (
+        <Card className="border-primary/40">
+          <CardHeader>
+            <CardTitle>Setup incomplete</CardTitle>
+            <CardDescription>Aloriq works best after you define one goal, a metric stack, and a weekly commitment.</CardDescription>
+          </CardHeader>
+          <CardContent className="flex flex-wrap gap-2">
+            <Button asChild><Link href="/setup">Continue setup</Link></Button>
+            {goals.length === 0 ? <Button asChild variant="outline"><Link href="/goals/new">Create goal</Link></Button> : null}
+          </CardContent>
+        </Card>
+      ) : null}
+
       {goals.length === 0 ? (
         <Card>
           <CardHeader><CardTitle>Start with Aloriq</CardTitle><CardDescription>Complete Life Map, define values, then create the first structured goal.</CardDescription></CardHeader>

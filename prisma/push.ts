@@ -23,12 +23,16 @@ async function main() {
     const columns = await prisma.$queryRawUnsafe<Array<{ name: string }>>("PRAGMA table_info('User')");
     const names = new Set(columns.map((column) => column.name));
     if (!names.has("currency")) {
-      await prisma.$executeRawUnsafe("ALTER TABLE User ADD COLUMN currency TEXT NOT NULL DEFAULT 'currency'");
+      await prisma.$executeRawUnsafe("ALTER TABLE User ADD COLUMN currency TEXT NOT NULL DEFAULT 'USD'");
       console.log("Added User.currency.");
     }
     if (!names.has("setupCompletedAt")) {
       await prisma.$executeRawUnsafe("ALTER TABLE User ADD COLUMN setupCompletedAt DATETIME");
       console.log("Added User.setupCompletedAt.");
+    }
+    if (!names.has("setupSkippedAt")) {
+      await prisma.$executeRawUnsafe("ALTER TABLE User ADD COLUMN setupSkippedAt DATETIME");
+      console.log("Added User.setupSkippedAt.");
     }
     console.log("SQLite schema already exists. Skipping DDL.");
     return;

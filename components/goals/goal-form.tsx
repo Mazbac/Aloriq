@@ -14,6 +14,7 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Field, ActionMessage } from "@/components/forms/form-parts";
 
 type GoalWithRelations = Goal & {
@@ -90,96 +91,135 @@ export function GoalForm({ goal, domains, needs, values }: { goal?: GoalWithRela
     <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
       <Card>
         <CardHeader>
-          <CardTitle>Goal logic</CardTitle>
-          <CardDescription>Keep this above execution tools: what, why, measure, cost.</CardDescription>
+          <CardTitle>{goal ? "Edit goal" : "Create draft goal"}</CardTitle>
+          <CardDescription>Drafts can be incomplete. Active goals require a success definition, values, metric stack, and current-week commitment. Actual work happens outside Aloriq.</CardDescription>
         </CardHeader>
-        <CardContent className="grid gap-4 md:grid-cols-2">
-          <Field label="Title" error={form.formState.errors.title?.message}>
-            <Input {...form.register("title")} />
-          </Field>
-          <Field label="Life domain" error={form.formState.errors.lifeDomainId?.message}>
-            <Select value={form.watch("lifeDomainId")} onValueChange={(value) => form.setValue("lifeDomainId", value)}>
-              <SelectTrigger><SelectValue /></SelectTrigger>
-              <SelectContent>{domains.map((domain) => <SelectItem key={domain.id} value={domain.id}>{domain.name}</SelectItem>)}</SelectContent>
-            </Select>
-          </Field>
-          <Field label="Goal type" error={form.formState.errors.goalType?.message}>
-            <Select value={form.watch("goalType")} onValueChange={(value) => form.setValue("goalType", value as GoalType)}>
-              <SelectTrigger><SelectValue /></SelectTrigger>
-              <SelectContent>{Object.values(GoalType).map((type) => <SelectItem key={type} value={type}>{enumLabel(type)}</SelectItem>)}</SelectContent>
-            </Select>
-          </Field>
-          <Field label="Status" error={form.formState.errors.status?.message} hint="Active requires success definition, at least one value, and at least one metric.">
-            <Select value={form.watch("status")} onValueChange={(value) => form.setValue("status", value as GoalStatus)}>
-              <SelectTrigger><SelectValue /></SelectTrigger>
-              <SelectContent>{Object.values(GoalStatus).map((status) => <SelectItem key={status} value={status}>{enumLabel(status)}</SelectItem>)}</SelectContent>
-            </Select>
-          </Field>
-          <Field label="Start date" error={form.formState.errors.startDate?.message as string | undefined}>
-            <Input type="date" {...form.register("startDate")} />
-          </Field>
-          <Field label="Target date" error={form.formState.errors.targetDate?.message as string | undefined}>
-            <Input type="date" {...form.register("targetDate")} />
-          </Field>
-          <Field label="External work URL" error={form.formState.errors.externalWorkUrl?.message as string | undefined} hint="Notion, Todoist, GitHub, Figma, Google Sheet, CRM, MacroFactor, Calendar.">
-            <Input placeholder="https://..." {...form.register("externalWorkUrl")} />
-          </Field>
-          <Field label="Description" className="md:col-span-2" error={form.formState.errors.description?.message as string | undefined}>
-            <Textarea {...form.register("description")} />
-          </Field>
-          <Field label="Why now?" className="md:col-span-2" error={form.formState.errors.whyNow?.message as string | undefined}>
-            <Textarea {...form.register("whyNow")} />
-          </Field>
-          <Field label="Success definition" className="md:col-span-2" error={form.formState.errors.successDefinition?.message} hint="Required before a goal can become Active. Drafts can stay incomplete.">
-            <Textarea {...form.register("successDefinition")} />
-          </Field>
-          <Field label="Trade-offs" className="md:col-span-2" error={form.formState.errors.tradeOffs?.message as string | undefined}>
-            <Textarea {...form.register("tradeOffs")} />
-          </Field>
-          <Field label="Not worth it if" className="md:col-span-2" error={form.formState.errors.notWorthItIf?.message as string | undefined}>
-            <Textarea {...form.register("notWorthItIf")} />
-          </Field>
-        </CardContent>
       </Card>
 
-      <Card>
-        <CardHeader>
-          <CardTitle>Needs, values, criteria</CardTitle>
-          <CardDescription>Connect the goal to reasons that can be reviewed later.</CardDescription>
-        </CardHeader>
-        <CardContent className="grid gap-6 lg:grid-cols-2">
-          <div className="space-y-3">
-            <div className="text-sm font-medium">Needs</div>
-            <div className="grid gap-2">
-              {needs.map((need) => (
-                <label key={need.id} className="flex items-center gap-2 rounded-md border bg-background p-2 text-sm">
-                  <Checkbox checked={form.watch("needIds").includes(need.id)} onCheckedChange={(checked) => toggleArray("needIds", need.id, checked === true)} />
-                  {need.name}
-                </label>
-              ))}
-            </div>
-          </div>
-          <div className="space-y-3">
-            <div className="text-sm font-medium">Values</div>
-            <div className="grid gap-2">
-              {values.map((value) => (
-                <label key={value.id} className="flex items-center gap-2 rounded-md border bg-background p-2 text-sm">
-                  <Checkbox checked={form.watch("valueIds").includes(value.id)} onCheckedChange={(checked) => toggleArray("valueIds", value.id, checked === true)} />
-                  {value.rank ? `#${value.rank} ` : ""}{value.name}
-                </label>
-              ))}
-            </div>
-          </div>
-          <Field label="Goal-specific criteria" className="lg:col-span-2" hint="One criterion per line." error={form.formState.errors.criteriaText?.message as string | undefined}>
-            <Textarea {...form.register("criteriaText")} />
-          </Field>
-        </CardContent>
-      </Card>
+      <Tabs defaultValue="goal" className="space-y-4">
+        <TabsList className="flex h-auto flex-wrap justify-start">
+          <TabsTrigger value="goal">Goal</TabsTrigger>
+          <TabsTrigger value="alignment">Alignment</TabsTrigger>
+          <TabsTrigger value="reality">Reality Check</TabsTrigger>
+          <TabsTrigger value="save">Save</TabsTrigger>
+        </TabsList>
 
-      <div className="flex items-center gap-3">
-        <Button disabled={isPending}>{isPending ? "Saving..." : "Save goal"}</Button>
-        <ActionMessage result={result} />
-      </div>
+        <TabsContent value="goal">
+          <Card>
+            <CardHeader>
+              <CardTitle>Goal</CardTitle>
+              <CardDescription>Define what this goal is and where the real work happens.</CardDescription>
+            </CardHeader>
+            <CardContent className="grid gap-4 md:grid-cols-2">
+              <Field label="Title" error={form.formState.errors.title?.message}>
+                <Input {...form.register("title")} />
+              </Field>
+              <Field label="Life domain" error={form.formState.errors.lifeDomainId?.message}>
+                <Select value={form.watch("lifeDomainId")} onValueChange={(value) => form.setValue("lifeDomainId", value)}>
+                  <SelectTrigger><SelectValue /></SelectTrigger>
+                  <SelectContent>{domains.map((domain) => <SelectItem key={domain.id} value={domain.id}>{domain.name}</SelectItem>)}</SelectContent>
+                </Select>
+              </Field>
+              <Field label="Goal type" error={form.formState.errors.goalType?.message}>
+                <Select value={form.watch("goalType")} onValueChange={(value) => form.setValue("goalType", value as GoalType)}>
+                  <SelectTrigger><SelectValue /></SelectTrigger>
+                  <SelectContent>{Object.values(GoalType).map((type) => <SelectItem key={type} value={type}>{enumLabel(type)}</SelectItem>)}</SelectContent>
+                </Select>
+              </Field>
+              <Field label="Status" error={form.formState.errors.status?.message} hint="Use Draft until the activation checklist is complete.">
+                <Select value={form.watch("status")} onValueChange={(value) => form.setValue("status", value as GoalStatus)}>
+                  <SelectTrigger><SelectValue /></SelectTrigger>
+                  <SelectContent>{Object.values(GoalStatus).map((status) => <SelectItem key={status} value={status}>{enumLabel(status)}</SelectItem>)}</SelectContent>
+                </Select>
+              </Field>
+              <Field label="Start date" error={form.formState.errors.startDate?.message as string | undefined}>
+                <Input type="date" {...form.register("startDate")} />
+              </Field>
+              <Field label="Target date" error={form.formState.errors.targetDate?.message as string | undefined}>
+                <Input type="date" {...form.register("targetDate")} />
+              </Field>
+              <Field label="Description" className="md:col-span-2" error={form.formState.errors.description?.message as string | undefined}>
+                <Textarea {...form.register("description")} />
+              </Field>
+              <Field label="External work URL" className="md:col-span-2" error={form.formState.errors.externalWorkUrl?.message as string | undefined} hint="Notion, Todoist, GitHub, Figma, Google Sheet, CRM, MacroFactor, Calendar. Aloriq does not replace these tools.">
+                <Input placeholder="https://..." {...form.register("externalWorkUrl")} />
+              </Field>
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        <TabsContent value="alignment">
+          <Card>
+            <CardHeader>
+              <CardTitle>Alignment</CardTitle>
+              <CardDescription>Connect the goal to needs, values, and criteria that can be reviewed later.</CardDescription>
+            </CardHeader>
+            <CardContent className="grid gap-6 lg:grid-cols-2">
+              <div className="space-y-3">
+                <div className="text-sm font-medium">Needs</div>
+                <div className="grid gap-2">
+                  {needs.map((need) => (
+                    <label key={need.id} className="flex items-center gap-2 rounded-md border bg-background p-2 text-sm">
+                      <Checkbox checked={form.watch("needIds").includes(need.id)} onCheckedChange={(checked) => toggleArray("needIds", need.id, checked === true)} />
+                      {need.name}
+                    </label>
+                  ))}
+                </div>
+              </div>
+              <div className="space-y-3">
+                <div className="text-sm font-medium">Values</div>
+                <div className="grid gap-2">
+                  {values.map((value) => (
+                    <label key={value.id} className="flex items-center gap-2 rounded-md border bg-background p-2 text-sm">
+                      <Checkbox checked={form.watch("valueIds").includes(value.id)} onCheckedChange={(checked) => toggleArray("valueIds", value.id, checked === true)} />
+                      {value.rank ? `#${value.rank} ` : ""}{value.name}
+                    </label>
+                  ))}
+                </div>
+              </div>
+              <Field label="Goal-specific criteria" className="lg:col-span-2" hint="One criterion per line." error={form.formState.errors.criteriaText?.message as string | undefined}>
+                <Textarea {...form.register("criteriaText")} />
+              </Field>
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        <TabsContent value="reality">
+          <Card>
+            <CardHeader>
+              <CardTitle>Reality check</CardTitle>
+              <CardDescription>Clarify why this is worth pursuing and what would make it not worth it.</CardDescription>
+            </CardHeader>
+            <CardContent className="grid gap-4">
+              <Field label="Why now?" error={form.formState.errors.whyNow?.message as string | undefined}>
+                <Textarea {...form.register("whyNow")} />
+              </Field>
+              <Field label="Success definition" error={form.formState.errors.successDefinition?.message} hint="Required before a goal can become Active. Drafts can stay incomplete.">
+                <Textarea {...form.register("successDefinition")} />
+              </Field>
+              <Field label="Trade-offs" error={form.formState.errors.tradeOffs?.message as string | undefined}>
+                <Textarea {...form.register("tradeOffs")} />
+              </Field>
+              <Field label="Not worth it if" error={form.formState.errors.notWorthItIf?.message as string | undefined}>
+                <Textarea {...form.register("notWorthItIf")} />
+              </Field>
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        <TabsContent value="save">
+          <Card>
+            <CardHeader>
+              <CardTitle>Save</CardTitle>
+              <CardDescription>Save as Draft if the goal is still incomplete. Activation can happen from the goal detail page when the checklist is ready.</CardDescription>
+            </CardHeader>
+            <CardContent className="flex flex-wrap items-center gap-3">
+              <Button disabled={isPending}>{isPending ? "Saving..." : "Save goal"}</Button>
+              <ActionMessage result={result} />
+            </CardContent>
+          </Card>
+        </TabsContent>
+      </Tabs>
     </form>
   );
 }

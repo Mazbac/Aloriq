@@ -28,7 +28,29 @@ function errorMessage(error: unknown) {
 }
 
 function revalidateApp() {
-  ["/dashboard", "/life-map", "/values", "/goals", "/reviews", "/settings"].forEach((path) => revalidatePath(path));
+  ["/dashboard", "/life-map", "/values", "/goals", "/reviews", "/settings", "/setup"].forEach((path) => revalidatePath(path));
+}
+
+async function getGoalActivationInput(goalId: string) {
+  const user = await getDemoUser();
+  const week = currentWeekRange(new Date(), user.preferredWeekStartDay);
+  const goal = await prisma.goal.findUniqueOrThrow({
+    where: { id: goalId },
+    include: {
+      values: true,
+      metrics: { select: { type: true } },
+    },
+  });
+  const currentWeekCommitmentCount = await prisma.weeklyCommitment.count({
+    where: { goalId, weekStartDate: { gte: week.start, lt: week.end } },
+  });
+  return {
+    status: GoalStatus.ACTIVE,
+    successDefinition: goal.successDefinition,
+    connectedValueCount: goal.values.length,
+    metrics: goal.metrics,
+    currentWeekCommitmentCount,
+  };
 }
 
 export async function updateLifeDomain(input: unknown): Promise<ActionResult> {
@@ -225,6 +247,18 @@ export async function addRecommendedMetricStack(goalId: string): Promise<ActionR
   }
 }
 
+export async function activateGoal(goalId: string): Promise<ActionResult> {
+  try {
+    assertActivatable(await getGoalActivationInput(goalId));
+    await prisma.goal.update({ where: { id: goalId }, data: { status: GoalStatus.ACTIVE } });
+    revalidateApp();
+    revalidatePath(`/goals/${goalId}`);
+    return { ok: true, message: "Goal activated." };
+  } catch (error) {
+    return { ok: false, message: errorMessage(error) };
+  }
+}
+
 export async function saveMetricEntry(input: unknown): Promise<ActionResult> {
   try {
     const data = metricEntrySchema.parse(input);
@@ -375,9 +409,20 @@ export async function updateSettings(input: unknown): Promise<ActionResult> {
 export async function completeSetup(): Promise<ActionResult> {
   try {
     const user = await getDemoUser();
-    await prisma.user.update({ where: { id: user.id }, data: { setupCompletedAt: new Date() } });
+    await prisma.user.update({ where: { id: user.id }, data: { setupCompletedAt: new Date(), setupSkippedAt: null } });
     revalidateApp();
     return { ok: true, message: "Setup completed." };
+  } catch (error) {
+    return { ok: false, message: errorMessage(error) };
+  }
+}
+
+export async function skipSetup(): Promise<ActionResult> {
+  try {
+    const user = await getDemoUser();
+    await prisma.user.update({ where: { id: user.id }, data: { setupSkippedAt: new Date() } });
+    revalidateApp();
+    return { ok: true, message: "Setup skipped for now." };
   } catch (error) {
     return { ok: false, message: errorMessage(error) };
   }

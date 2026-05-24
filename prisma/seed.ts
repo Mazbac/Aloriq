@@ -11,7 +11,7 @@ async function main() {
       name: "Demo User",
       email: "demo@aloriq.local",
       preferredWeekStartDay: 1,
-      setupCompletedAt: new Date(),
+      currency: "USD",
     },
   });
 

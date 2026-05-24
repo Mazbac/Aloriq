@@ -3,7 +3,7 @@
 import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import type { Value, ValueCriterion } from "@prisma/client";
-import { completeSetup, saveTopValues, type ActionResult } from "@/app/actions";
+import { completeSetup, saveTopValues, skipSetup, type ActionResult } from "@/app/actions";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Card, CardContent } from "@/components/ui/card";
@@ -50,22 +50,23 @@ export function SetupCompletion({ ready }: { ready: boolean }) {
     <Card>
       <CardContent className="flex flex-col gap-3 p-6 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <div className="font-medium">Finish setup</div>
+          <div className="font-medium">{ready ? "Finish setup" : "Setup incomplete"}</div>
           <p className="text-sm text-muted-foreground">{ready ? "The core setup is ready." : "You can finish later, but a draft goal, metrics, and a weekly commitment make the dashboard useful."}</p>
         </div>
         <div className="flex items-center gap-3">
           <Button
             type="button"
+            variant={ready ? "default" : "secondary"}
             disabled={isPending}
             onClick={() =>
               startTransition(async () => {
-                const next = await completeSetup();
+                const next = ready ? await completeSetup() : await skipSetup();
                 setResult(next);
                 if (next.ok) router.push("/dashboard");
               })
             }
           >
-            {isPending ? "Finishing..." : "Finish setup"}
+            {isPending ? "Saving..." : ready ? "Finish setup" : "Skip setup for now"}
           </Button>
           <ActionMessage result={result} />
         </div>
